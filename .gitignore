@@ -108,3 +108,6 @@ venv.bak/
 
 # Mac extra files
 .DS_Store
+
+# Output
+output.png
