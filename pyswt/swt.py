@@ -43,7 +43,7 @@ def swt(img):
       if edge > 0: # Checking if we're on an edge
         # Passing in single derivative values for rows and cols
         # Along with edges and ray origin
-        ray = cast_ray(g_rows, g_cols, edges, row, col)
+        ray = cast_ray(g_rows, g_cols, edges, row, col,1, math.pi/6)
         if ray != None:
           rays.append(ray)
           for point in ray:
@@ -53,12 +53,26 @@ def swt(img):
   
   return swt_img
 
-def cast_ray(g_cols, g_rows, edges, row, col):
+"""Casts a ray in an image given a starting point, an edge set, and the gradient
+  Applies the SWT algorithm steps and outputs bounding boxes.
+
+  Keyword Arguments:
+  
+  g_rows -- verticle component of the gradient
+  g_cols -- horizontal component of the gradient
+  edges -- the edge set of the image
+  row -- the starting row location in the image
+  col -- the starting column location in the image
+  dir -- either 1 (light text) or -1 (dark text), the direction the ray should be cast
+  max_angle_diff -- Controls how far from directly opposite the two edge gradeints should be
+  """
+
+def cast_ray(g_rows, g_cols, edges, row, col, dir, max_angle_diff):
   i = 1
   ray = [[row,col]]
   # Getting origin gradients
-  g_row = g_rows[row,col]
-  g_col = g_cols[row,col]
+  g_row = g_rows[row,col]*dir
+  g_col = g_cols[row,col]*dir
   # Normalizing g_col and g_row to ensure we move ahead one pixel
   g_col_norm = g_col / norm(g_col, g_row)
   g_row_norm = g_row / norm(g_col, g_row)
@@ -71,12 +85,16 @@ def cast_ray(g_cols, g_rows, edges, row, col):
     try:
       # Checking if the next step is an edge
       if edges[row_step,col_step] > 0:
-        # Checking that the opposite of the found pixel's gradient is
-        # within +/- 90 degrees of the origin pixel's gradient
-        g_opp_row = g_rows[row_step,col_step]
-        g_opp_col = g_cols[row_step,col_step]
-        # Dot product -> If they're within 90 degrees
-        if g_opp_row * g_row + g_opp_col * g_col > 0:
+        # Checking that edge pixels gradient is approximately opposite the direction of travel
+        g_opp_row = g_rows[row_step,col_step]*dir
+        g_opp_col = g_cols[row_step,col_step]*dir
+        theta = angleBetween(g_row_norm, g_col_norm, -g_opp_row, -g_opp_col)
+
+        if theta < max_angle_diff:
+          g_opp_row = g_opp_row/norm(g_opp_row, g_opp_col)
+          g_opp_col = g_opp_col/norm(g_opp_row, g_opp_col)
+         #print("Start Gradient: " + str(g_row_norm) + ", " + str(g_col_norm))
+         #print("End Gradient: " + str(-g_opp_row) + ", " + str(-g_opp_col))
           return ray
         else:
           return None
@@ -87,6 +105,18 @@ def cast_ray(g_cols, g_rows, edges, row, col):
 
 def norm(x,y):
   return math.sqrt(x * x + y * y)
+
+def dot(x1,y1,x2,y2):
+  return x1*x2+y1*y2    
+
+# assumes neither vector is zero
+def angleBetween(x1,y1,x2,y2):
+  proportion = dot(x1,y1,x2,y2)/(norm(x1,y1)*norm(x2,y2))
+  #print(proportion)
+  if abs(proportion) > 1:
+    return math.pi/2
+  else:
+    return math.acos(dot(x1,y1,x2,y2)/(norm(x1,y1)*norm(x2,y2)))
 
 def find_letters(swt_image):
   return letter_comps
