@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import math
+import copy
 
 def run(img):
   """Main SWT runner function.
@@ -26,10 +27,8 @@ def swt(img):
   # Note: can also use a Scharr filter here if
   # ksize is set to -1. Potentially, provides better
   # results than a 3x3 sobel.
-  g_cols = cv2.Sobel(img,cv2.CV_64F,1,0,ksize=-1)
-  g_rows = cv2.Sobel(img,cv2.CV_64F,0,1,ksize=-1)
-  # Getting gradient direction (rads)
-  gdir = np.arctan2(g_cols, g_rows)
+  gy = cv2.Sobel(img,cv2.CV_64F,1,0,ksize=-1)
+  gx = cv2.Sobel(img,cv2.CV_64F,0,1,ksize=-1)
 
   # Setting up SWT image
   swt_img = np.empty(img.shape)
@@ -43,23 +42,40 @@ def swt(img):
       if edge > 0: # Checking if we're on an edge
         # Passing in single derivative values for rows and cols
         # Along with edges and ray origin
-        ray = cast_ray(g_rows, g_cols, edges, row, col,1, math.pi/6)
+        ray = cast_ray(gx, gy, edges, row, col, -1, math.pi/2)
         if ray != None:
+          # Adding ray to rays accumulator
           rays.append(ray)
+          # Calculating the width of the ray
+          width = magnitude(ray[len(ray)-1][0] - ray[0][0], ray[len(ray)-1][1] - ray[0][1])
+          # Assigning width to each pixel in the ray
           for point in ray:
-            swt_img[point[0],point[1]] = 255
-      else:
-        swt_img[row,col] = 0
+            if swt_img[point[0],point[1]] > width:
+              swt_img[point[0],point[1]] = width
+
+  # Creating a copy of the SWT image
+  swt_median = copy.deepcopy(swt_img)
+
+  # Looping through rays and assigning the median value
+  # to ray pixels that are above the median
+  for ray in rays:
+    # Getting median of each ray's values
+    median = median_ray(ray, swt_img)
+
+    # Loop through ray and change pixel values greater than median
+    for coordinate in ray:
+      if swt_img[coordinate[0], coordinate[1]] > median:
+        swt_median[coordinate[0], coordinate[1]] = median
   
-  return swt_img
+  return swt_median
 
 """Casts a ray in an image given a starting point, an edge set, and the gradient
   Applies the SWT algorithm steps and outputs bounding boxes.
 
   Keyword Arguments:
   
-  g_rows -- verticle component of the gradient
-  g_cols -- horizontal component of the gradient
+  gx -- verticle component of the gradient
+  gy -- horizontal component of the gradient
   edges -- the edge set of the image
   row -- the starting row location in the image
   col -- the starting column location in the image
@@ -67,15 +83,17 @@ def swt(img):
   max_angle_diff -- Controls how far from directly opposite the two edge gradeints should be
   """
 
-def cast_ray(g_rows, g_cols, edges, row, col, dir, max_angle_diff):
+def cast_ray(gx, gy, edges, row, col, dir, max_angle_diff):
   i = 1
   ray = [[row,col]]
   # Getting origin gradients
-  g_row = g_rows[row,col]*dir
-  g_col = g_cols[row,col]*dir
+  g_row = gx[row,col]*dir
+  g_col = gy[row,col]*dir
   # Normalizing g_col and g_row to ensure we move ahead one pixel
-  g_col_norm = g_col / norm(g_col, g_row)
-  g_row_norm = g_row / norm(g_col, g_row)
+  g_col_norm = g_col / magnitude(g_col, g_row)
+  g_row_norm = g_row / magnitude(g_col, g_row)
+
+  # TODO: Cap ray size based off of ratio?
   while True:
     # Calculating the next step ahead in the ray
     # Adding 0.5 to start in center of pixel
@@ -86,13 +104,13 @@ def cast_ray(g_rows, g_cols, edges, row, col, dir, max_angle_diff):
       # Checking if the next step is an edge
       if edges[row_step,col_step] > 0:
         # Checking that edge pixels gradient is approximately opposite the direction of travel
-        g_opp_row = g_rows[row_step,col_step]*dir
-        g_opp_col = g_cols[row_step,col_step]*dir
-        theta = angleBetween(g_row_norm, g_col_norm, -g_opp_row, -g_opp_col)
+        g_opp_row = gx[row_step,col_step]*dir
+        g_opp_col = gy[row_step,col_step]*dir
+        theta = angle_between(g_row_norm, g_col_norm, -g_opp_row, -g_opp_col)
 
         if theta < max_angle_diff:
-          g_opp_row = g_opp_row/norm(g_opp_row, g_opp_col)
-          g_opp_col = g_opp_col/norm(g_opp_row, g_opp_col)
+          g_opp_row = g_opp_row/magnitude(g_opp_row, g_opp_col)
+          g_opp_col = g_opp_col/magnitude(g_opp_row, g_opp_col)
          #print("Start Gradient: " + str(g_row_norm) + ", " + str(g_col_norm))
          #print("End Gradient: " + str(-g_opp_row) + ", " + str(-g_opp_col))
           return ray
@@ -103,20 +121,27 @@ def cast_ray(g_rows, g_cols, edges, row, col, dir, max_angle_diff):
     except IndexError:
       return None
 
-def norm(x,y):
+def magnitude(x, y):
   return math.sqrt(x * x + y * y)
 
-def dot(x1,y1,x2,y2):
+def dot(x1, y1, x2, y2):
   return x1*x2+y1*y2    
 
 # assumes neither vector is zero
-def angleBetween(x1,y1,x2,y2):
-  proportion = dot(x1,y1,x2,y2)/(norm(x1,y1)*norm(x2,y2))
+def angle_between(x1, y1, x2, y2):
+  proportion = dot(x1,y1,x2,y2)/(magnitude(x1,y1)*magnitude(x2,y2))
   #print(proportion)
   if abs(proportion) > 1:
     return math.pi/2
   else:
-    return math.acos(dot(x1,y1,x2,y2)/(norm(x1,y1)*norm(x2,y2)))
+    return math.acos(dot(x1,y1,x2,y2)/(magnitude(x1,y1)*magnitude(x2,y2)))
+
+def median_ray(ray, swt_img):
+  # Accumulate pixel values and calculate median
+  pixel_values = []
+  for coordinate in ray:
+    pixel_values.append(swt_img[coordinate[0], coordinate[1]])
+  return np.median(pixel_values)
 
 def find_letters(swt_image):
   return letter_comps
