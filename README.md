@@ -2,7 +2,7 @@
 A Python implementation of the Stroke Width Transform
 
 ## Installation
-Virtualenv is recommened for managing python packages.
+Virtualenv is recommended for managing python packages.
 
 Install the packages used in this project with:
 
