@@ -43,7 +43,7 @@ def run(swt_median_image):
             if pixel_source[row, col] > 0:
                 # Create a new data storage object
                 component_data = ConnectedComponentData(row, col, label)
-                region_grow(pixel_source, component_image, label, row, col, component_data)
+                region_grow_stack(pixel_source, component_image, label, row, col, component_data)
                 # Keep track of the component data
                 connected_component_data.append(component_data)
                 label = label + 1
@@ -52,6 +52,7 @@ def run(swt_median_image):
 
 
 # We may consider removing component_image as we can store all this data in component_data
+# This method breaks from max frames limits, use the method below that uses a stack
 def region_grow(pixel_source, component_image, label, row, col, component_data, connect8=True, max_ratio=3):
     # Getting current pixel value
     curr_value = pixel_source[row, col]
@@ -87,6 +88,74 @@ def region_grow(pixel_source, component_image, label, row, col, component_data, 
                     region_grow(pixel_source, component_image, label, row_shift, col_shift, component_data, connect8)
         except IndexError:
             continue
+
+
+# This method is more gross than the recusive one, but does not break number of frames allowed
+def region_grow_stack(pixel_source, component_image, label, row, col, component_data, connect8=True, max_ratio=3):
+    if connect8:
+        num_directions = 8
+        directions = __directions8__
+    else:
+        num_directions = 4
+        directions = __directions4__
+
+    initial_stroke_width = pixel_source[row, col]
+    # Delete visited pixel
+    pixel_source[row, col] = 0
+    component_data.add_pixel(row, col, initial_stroke_width)
+    # label visited pixel
+    component_image[row, col] = label
+
+    pixel_stack = []
+
+    # Initialize stack
+    for i in range(0, num_directions):
+        try:
+            # Getting coords we're going to check to grow into
+            row_shift = row + directions[i][0]
+            col_shift = col + directions[i][1]
+
+            adj_value = pixel_source[row_shift, col_shift]
+
+            # Checking we're not growing into an empty region
+            if adj_value > 0:
+                if initial_stroke_width / adj_value < max_ratio and adj_value / initial_stroke_width < max_ratio:
+                    # update connected component tracking data structures
+                    component_data.add_pixel(row_shift, col_shift, adj_value)
+                    pixel_source[row_shift, col_shift] = 0
+                    component_image[row_shift, col_shift] = label
+                    # put on stack
+                    pixel = Pixel(row_shift, col_shift, adj_value)
+                    pixel_stack.append(pixel)
+
+        except IndexError:
+            continue
+
+    # Now go through to find the connected components
+    while len(pixel_stack) > 0:
+        curr_pixel = pixel_stack.pop()
+        for i in range(0, num_directions):
+            try:
+                # Getting coords we're going to check to grow into
+                row_shift = curr_pixel.row + directions[i][0]
+                col_shift = curr_pixel.col + directions[i][1]
+
+                adj_value = pixel_source[row_shift, col_shift]
+
+                # Checking we're not growing into an empty region
+                if adj_value > 0:
+                    # Checking stroke width ration does not exceed max ratio
+                    if curr_pixel.stroke_width / adj_value < max_ratio and curr_pixel.stroke_width / initial_stroke_width < max_ratio:
+                        # update connected component tracking data structures
+                        component_data.add_pixel(row_shift, col_shift, adj_value)
+                        pixel_source[row_shift, col_shift] = 0
+                        component_image[row_shift, col_shift] = label
+                        # put on stack
+                        pixel = Pixel(row_shift, col_shift, adj_value)
+                        pixel_stack.append(pixel)
+
+            except IndexError:
+                continue
 
 
 # This class is just a data container
@@ -154,10 +223,10 @@ class ConnectedComponentData:
     # Returns the coordinates for the bounding box: [top-left, top-right, bottom-right, bottom-left]
     def get_bounding_box(self):
         return [
-          [self.row_min, self.col_min],  # Top-left
-          [self.row_min, self.col_max],  # Top-right
-          [self.row_max, self.col_max],  # Bottom-right
-          [self.row_max, self.col_min]   # Bottom-left
+            [self.row_min, self.col_min],  # Top-left
+            [self.row_min, self.col_max],  # Top-right
+            [self.row_max, self.col_max],  # Bottom-right
+            [self.row_max, self.col_min]  # Bottom-left
         ]
 
     # updates the values this component contains
@@ -179,3 +248,10 @@ class ConnectedComponentData:
 
         # update pixel total
         self.area += 1
+
+
+class Pixel:
+    def __init__(self, row, col, stroke_width):
+        self.row = row
+        self.col = col
+        self.stroke_width = stroke_width
