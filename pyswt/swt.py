@@ -18,9 +18,21 @@ def run(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # Applying SWT to image
     swt_img = swt(gray)
-    swt_connected_components = connected_component.run(swt_img)
+    # Get connected component image and data. connected_component_data is defined in connected_component.py
+    connected_components_img, connected_component_data = connected_component.run(swt_img)
+    for c in connected_component_data:
+        if c.area > 1:
+            print("Label: " + str(c.label))
+            print("Area: " + str(c.area))
+            print("Bounding Box: " + str(c.get_bounding_box()))
+            print("Stroke Widths: " + str(c.stroke_widths))
 
-    return swt_connected_components
+    for row in range(connected_components_img.shape[0]):
+        col_pairs = []
+        for col in range(connected_components_img.shape[1]):
+            col_pairs.append([connected_components_img[row, col]])
+        # print(col_pairs)
+    return connected_components_img
 
 
 def swt(img):
@@ -47,7 +59,7 @@ def swt(img):
             if edge > 0:  # Checking if we're on an edge
                 # Passing in single derivative values for rows and cols
                 # Along with edges and ray origin
-                ray = cast_ray(gx, gy, edges, row, col, 1, math.pi / 2)
+                ray = cast_ray(gx, gy, edges, row, col, -1, math.pi / 2)
                 if ray != None:
                     # Adding ray to rays accumulator
                     rays.append(ray)
