@@ -1,7 +1,9 @@
 import pyswt
 import cv2
+import sys
 
-img_path = "./images/swt-example-4.png"
+sys.setrecursionlimit(100000)
+img_path = "./images/swt-example-1.png"
 img = cv2.imread(img_path)
 swt_img = pyswt.run(img)
 #swt_img = cv2.cvtColor(swt_img, cv2.COLOR)

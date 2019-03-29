@@ -27,11 +27,12 @@ def run(swt_median_image):
     # Copying so we can remove pixels to keep track
     # of components found
     pixel_source = copy.deepcopy(swt_median_image)
+
     # Creating initial label
     label = 1
 
     # Creating an empty image to store connected components
-    component_image = np.empty(pixel_source.shape)
+    component_image = np.zeros(pixel_source.shape)
     component_image[:] = 0
 
     # connected component data
@@ -72,14 +73,16 @@ def region_grow(pixel_source, component_image, label, row, col, component_data, 
         try:
             # Getting coords we're going to check to grow into
             row_shift = row + directions[i][0]
-            col_shift = row + directions[i][1]
+            col_shift = col + directions[i][1]
 
             # Checking we're not growing into an empty region
             if pixel_source[row_shift, col_shift] > 0:
                 adj_value = pixel_source[row_shift, col_shift]
+                # print("Current_value before: " + str(curr_value))
+                # print("adj_value before: " + str(adj_value))
                 if curr_value / adj_value < max_ratio and adj_value / curr_value < max_ratio:
-                    print("Current_value: " + str(curr_value))
-                    print("adj_value: " + str(adj_value))
+                    # print("Current_value: " + str(curr_value))
+                    # print("adj_value: " + str(adj_value))
                     # Recursively grow to connected pieces
                     region_grow(pixel_source, component_image, label, row_shift, col_shift, component_data, connect8)
         except IndexError:
