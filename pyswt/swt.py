@@ -20,21 +20,7 @@ def run(img):
     swt_img = swt(gray)
     # Get connected component image and data. connected_component_data is defined in connected_component.py
     connected_components_img, connected_component_data = connected_component.run(swt_img)
-    print_image(connected_components_img)
 
-    for c in connected_component_data:
-        if c.area > 1:
-            print("Label: " + str(c.label))
-            print("Area: " + str(c.area))
-            print("Bounding Box: " + str(c.get_bounding_box()))
-            print("Stroke Widths: " + str(c.stroke_widths))
-    '''
-    alt_image = np.zeros((connected_components_img.shape[0], connected_components_img.shape[1]), np.uint8)
-    for cc in connected_component_data:
-        for coord in cc.pixel_coordinates:
-            print(str(coord))
-            alt_image[coord[0], coord[1]] = 255
-    '''
     return connected_components_img
 
 
