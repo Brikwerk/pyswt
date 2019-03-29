@@ -2,6 +2,7 @@ import cv2
 import numpy as np
 import math
 import copy
+from . import connected_component
 
 def run(img):
   """Main SWT runner function.
@@ -15,8 +16,10 @@ def run(img):
   # Converting image to grayscale
   gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
   # Applying SWT to image
-  fin = swt(gray)
-  return fin
+  swt_img = swt(gray)
+  swt_connected_components = connected_component.run(swt_img)
+
+  return swt_connected_components
 
 def swt(img):
   """Applies the SWT to the input image"""
