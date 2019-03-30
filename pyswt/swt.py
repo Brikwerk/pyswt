@@ -50,7 +50,7 @@ def swt(img):
             if edge > 0:  # Checking if we're on an edge
                 # Passing in single derivative values for rows and cols
                 # Along with edges and ray origin
-                ray = cast_ray(gx, gy, edges, row, col, -1, math.pi / 2)
+                ray = cast_ray(gx, gy, edges, row, col, 1, math.pi / 2)
                 if ray != None:
                     # Adding ray to rays accumulator
                     rays.append(ray)
