@@ -41,9 +41,9 @@ def filter_by_aspect_ratio(cc_data: List[ConnectedComponentData]):
     return filtered_set
 
 
+# TODO: Make this proportional to image dimensions
 def filter_by_component_height(cc_data: List[ConnectedComponentData]):
     filtered_set = []
-    # TODO: Make this proportional to image dimensions
     for cc in cc_data:
         # Learned parameter, see paper
         if 10 <= (cc.row_max - cc.row_min) <= 300:
