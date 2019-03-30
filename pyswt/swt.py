@@ -3,6 +3,7 @@ import numpy as np
 import math
 import copy
 from . import connected_component
+from . import filter_connected_components
 
 
 def run(img):
@@ -20,6 +21,7 @@ def run(img):
     swt_img = swt(gray)
     # Get connected component image and data. connected_component_data is defined in connected_component.py
     connected_components_img, connected_component_data = connected_component.run(swt_img)
+    filtered_components - filter_connected_components.run(connected_component_data)
 
     return connected_components_img
 
