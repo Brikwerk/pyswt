@@ -21,9 +21,9 @@ def run(img):
     swt_img = swt(gray)
     # Get connected component image and data. connected_component_data is defined in connected_component.py
     connected_components_img, connected_component_data = connected_component.run(swt_img)
-    filtered_components - filter_connected_components.run(connected_component_data)
+    filtered_components = filter_connected_components.run(connected_component_data)
 
-    return connected_components_img
+    return connected_component.get_connected_component_image(filtered_components, swt_img.shape[0], swt_img.shape[1])
 
 
 def swt(img):
