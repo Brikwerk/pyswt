@@ -1,6 +1,6 @@
 import copy
 import numpy as np
-import math
+from typing import List
 
 # 8 connected relative directions
 __directions8__ = [
@@ -255,3 +255,13 @@ class Pixel:
         self.row = row
         self.col = col
         self.stroke_width = stroke_width
+
+
+def get_connected_component_image(cc_data: List[ConnectedComponentData], num_rows: int, num_cols: int):
+    blank = np.zeros([num_rows, num_cols, 1], np.uint8)
+    for cc in cc_data:
+        label = min(255, cc.label)
+        for coord in cc.pixel_coordinates:
+            blank[coord[0], coord[1]] = 255
+
+    return blank
