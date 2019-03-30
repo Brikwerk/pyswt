@@ -4,6 +4,7 @@ import math
 import copy
 from . import connected_component
 from . import filter_connected_components
+from . import letter_chains
 
 
 def run(img):
@@ -22,8 +23,14 @@ def run(img):
     # Get connected component image and data. connected_component_data is defined in connected_component.py
     connected_components_img, connected_component_data = connected_component.run(swt_img)
     filtered_components = filter_connected_components.run(connected_component_data)
+    # Chains contain the final bounding boxes
+    chains = letter_chains.run(filtered_components)
+    final_cc = []
+    for chain in chains:
+        for cc in chain.chain:
+            final_cc.append(cc)
 
-    return connected_component.get_connected_component_image(filtered_components, swt_img.shape[0], swt_img.shape[1])
+    return connected_component.get_connected_component_image(final_cc, swt_img.shape[0], swt_img.shape[1])
 
 
 def swt(img):
