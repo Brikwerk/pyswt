@@ -23,6 +23,9 @@ def populate_pairs(cc_data_filtered: List[ConnectedComponentData]):
 
 
 def is_within_relative_distance(cc_1: ConnectedComponentData, cc_2: ConnectedComponentData, max_dist_multiplier=3):
+    # Ensure one letter candidate is not floating above the other
+    if cc_1.row_min <= cc_2.row_max or cc_2.row_min <= cc_1.row_max:
+        return False
     # Computing distance from bottom_corner right corner to bottom_corner left because this should not change much
     # Euclidean distance
     dist = math.sqrt((cc_2.row_max - cc_1.row_max) ** 2 + (cc_2.col_min - cc_1.col_max) ** 2)
@@ -44,6 +47,7 @@ class Chain:
         # Stores the connected components that are a part of this chain
         self.chain = [cc_1, cc_2]
 
+        # Find this chains bounding box
         self.min_row = min(cc_1.min_row, cc_2.min_row)
         self.max_row = max(cc_1.max_row, cc_2.max_row)
         self.min_col = min(cc_1.min_col, cc_2.min_col)
