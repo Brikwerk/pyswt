@@ -55,14 +55,18 @@ def swt(img):
     swt_img[:] = np.Infinity  # Setting all values to infinite
 
     rays = []
+
+    edge_counter = 0
     # Looping through each pixel, calculating rays
     for row in range(img.shape[0]):
         for col in range(img.shape[1]):
             edge = edges[row, col]
+            edge_counter += 1
             if edge > 0:  # Checking if we're on an edge
+                print(edge_counter)
                 # Passing in single derivative values for rows and cols
                 # Along with edges and ray origin
-                ray = cast_ray(gx, gy, edges, row, col, 1, math.pi / 2)
+                ray = cast_ray(gx, gy, edges, row, col, -1, math.pi / 2)
                 if ray != None:
                     # Adding ray to rays accumulator
                     rays.append(ray)

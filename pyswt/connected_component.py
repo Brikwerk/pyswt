@@ -148,7 +148,7 @@ class ConnectedComponentData:
         # Statistical values to be calculated later
         self.__median_sw = None
         self.__mean_gray = None
-        self.__variance_gray = None
+        self.__variance_stroke_width = None
 
         self.__mean_gray = None
         self.__variance_gray = None
@@ -178,14 +178,14 @@ class ConnectedComponentData:
         return self.__median_sw
 
     def get_variance_stroke_width(self):
-        if self.__variance_gray is None:
+        if self.__variance_stroke_width is None:
             squared_sum = 0
             mean = self.get_mean_stroke_width()
             for s in self.stroke_widths:
                 squared_sum += (s - mean) ** 2
-            self.__variance_gray = squared_sum / len(self.stroke_widths)
+            self.__variance_stroke_width = squared_sum / len(self.stroke_widths)
 
-        return self.__variance_gray
+        return self.__variance_stroke_width
 
     def get_mean_gray(self):
         if self.__mean_gray is None:
