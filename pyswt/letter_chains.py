@@ -10,7 +10,7 @@ __sw_median_max_ratio = 2
 __height_max_ratio = 2
 __max_distance_multiplier = 3
 __min_chain_size = 3
-__max_average_gray_diff = 10
+__max_average_gray_diff = 5
 
 __gray_variance_coefficient = 1.25
 
@@ -26,9 +26,7 @@ def run(cc_data_filtered: List[ConnectedComponentData]):
     chains = remove_short_chains(chains)
 
     # This is Daniel's idea, any it only works well for some images
-    chains = filter_by_chain_gray_variance(chains)
-
-    # return chains
+    # chains = filter_by_chain_gray_variance(chains)
 
     return chains
 
@@ -197,12 +195,15 @@ def lengthen_chains(chains: List[Chain]):
 def filter_by_chain_gray_variance(chains: List[Chain]):
     filtered_chains = []
     gray_variances = []
+    areas = []
     for i in range(len(chains)):
         chain = chains[i]
         count = 0
         average_gray = 0
+        area = 0
         for cc in chain.chain:
             count += len(cc.grays)
+            area += cc.area
             for g in cc.grays:
                 average_gray += g
 
@@ -215,11 +216,13 @@ def filter_by_chain_gray_variance(chains: List[Chain]):
 
         variance_gray = variance_gray/count
         gray_variances.append(variance_gray)
+        areas.append(area)
 
     print(np.sort(gray_variances))
     max_gray_variance = np.average(gray_variances)*__gray_variance_coefficient
     for i in range(len(chains)):
         if gray_variances[i] <= max_gray_variance:
+        #if gray_variances[i]/areas[i] < 1.5:
             filtered_chains.append(chains[i])
 
     return filtered_chains

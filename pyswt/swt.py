@@ -18,12 +18,12 @@ def run(img):
 
     # Converting image to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    # gray_smoothed = cv2.GaussianBlur(gray, (5,5), 0)
 
     # Applying SWT to image, once for light text, once for dark text
     swt_light = swt(gray, 1)
     swt_dark = swt(gray, -1)
 
+    # gray = cv2.GaussianBlur(gray, (5, 5), 0)
     # Get connected component image and data. connected_component_data is defined in connected_component.py
     connected_components_img_light, connected_component_data_light = connected_component.run(gray, swt_light)
     connected_components_img_dark, connected_component_data_dark = connected_component.run(gray, swt_dark)

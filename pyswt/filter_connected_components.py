@@ -2,15 +2,15 @@ from .connected_component import ConnectedComponentData
 from typing import List
 
 # Magic numbers as specified by the paper
-__stroke_width_variance_coeff = 0.5  # This one I am altering
-__max_stroke_width_vairiance = 5
+__stroke_width_variance_coeff = 0.5
+__max_stroke_width_variance = 5
 __aspect_ratio_upper_bound = 10
 __aspect_ratio_lower_bound = 1.0 / __aspect_ratio_upper_bound
 __height_lower_bound = 10
 __height_upper_bound = 300
 
 
-__num_components_embedded_max = 2
+__num_components_embedded_max = 3
 
 
 def run(connected_components_data: List[ConnectedComponentData]):
@@ -19,11 +19,12 @@ def run(connected_components_data: List[ConnectedComponentData]):
     filtered_data = filter_by_component_height(filtered_data)
     filtered_data = filter_by_aspect_ratio(filtered_data)
 
-    # Currently, there seems like there is a bug that causes a few components to have huge bounding boxes
-    filtered_data = filter_if_contains_other_components(filtered_data)
-
     # if dropping text, it might be this method...
     filtered_data = filter_by_stroke_width_variance(filtered_data)
+
+    # Currently, there seems like there is a bug that causes a few components to have huge bounding boxes
+    # TODO: components randomly have huge bounding boxes, causing this to break, fix this bug
+    filtered_data = filter_if_contains_other_components(filtered_data)
 
     return filtered_data
 
@@ -33,15 +34,16 @@ def filter_by_stroke_width_variance(cc_data: List[ConnectedComponentData]):
     for cc in cc_data:
         # Remove the point if the variance is above half the average stroke width. See paper for details
         # This parameter is found empirically. Sometimes removes text
-
-        # This is how the paper sugests to do it, but it is non-sense
         """
+        # This is how the paper sugests to do it, but it is non-sense
         if cc.get_variance_stroke_width() <= cc.get_mean_stroke_width() * __stroke_width_variance_coeff:
             filtered_set.append(cc)
-        """
-        # print(cc.get_variance_stroke_width())
-        if cc.get_variance_stroke_width() <= __max_stroke_width_vairiance:
+        # """
+        # if cc.get_variance_stroke_width() <= __max_stroke_width_variance:
+        if cc.get_variance_stroke_width()/cc.area < 0.05:
             filtered_set.append(cc)
+            print((cc.get_variance_stroke_width(), cc.area))
+        # """
 
     return filtered_set
 
@@ -71,7 +73,6 @@ def filter_by_component_height(cc_data: List[ConnectedComponentData]):
             filtered_set.append(cc)
 
     return filtered_set
-
 
 
 def filter_if_contains_other_components(cc_data: List[ConnectedComponentData]):
