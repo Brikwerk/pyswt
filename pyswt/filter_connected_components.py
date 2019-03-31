@@ -22,7 +22,7 @@ def run(connected_components_data: List[ConnectedComponentData]):
     filtered_data = filter_if_contains_other_components(filtered_data)
 
     # Thought color variance would work well as a criteria, does not seem to.
-    filtered_data = filter_by_gray_variance(filtered_data)
+    # filtered_data = filter_by_gray_variance(filtered_data)
 
     # if dropping text, it might be this method...
     # filtered_data = filter_by_stroke_width_variance(filtered_data)
