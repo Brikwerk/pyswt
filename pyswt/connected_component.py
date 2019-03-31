@@ -24,6 +24,14 @@ __directions4__ = [
 
 
 def run(gray_img, swt_median_image):
+    """Main runner for the connected components discovery algorithm.
+    Applies the algorithm steps and outputs a connected component image
+    and connected component data.
+
+    Keyword Arguments
+    
+    swt_median_image -- An image with SWT applied to it
+    """
     # Copying so we can remove pixels to keep track
     # of components found
     pixel_source = copy.deepcopy(swt_median_image)
@@ -52,8 +60,11 @@ def run(gray_img, swt_median_image):
     return component_image, connected_component_data
 
 
+
 # This method is more gross than the recusive one, but does not break number of frames allowed
 def region_grow_stack(gray_img, pixel_source, component_image, label, row, col, component_data, connect8=True, max_ratio=3):
+    """A stack based implementation of the region growing algorithm"""
+
     if connect8:
         num_directions = 8
         directions = __directions8__
@@ -120,9 +131,10 @@ def region_grow_stack(gray_img, pixel_source, component_image, label, row, col, 
                 continue
 
 
-# This class is just a data container
-# Do not call the get methods until all data points have been added
 class ConnectedComponentData:
+    """This class is utilized as a data container for the cc algorithm
+    Do not call the get methods until all data points have been added
+    """
     def __init__(self, row, col, label):
         # These values will define the bounding box of the component
         self.row_min = row
@@ -148,6 +160,7 @@ class ConnectedComponentData:
         # Statistical values to be calculated later
         self.__median_sw = None
         self.__mean_gray = None
+
         self.__variance_stroke_width = None
 
         self.__mean_gray = None
@@ -183,6 +196,7 @@ class ConnectedComponentData:
             mean = self.get_mean_stroke_width()
             for s in self.stroke_widths:
                 squared_sum += (s - mean) ** 2
+
             self.__variance_stroke_width = squared_sum / len(self.stroke_widths)
 
         return self.__variance_stroke_width

@@ -9,7 +9,6 @@ __aspect_ratio_lower_bound = 1.0 / __aspect_ratio_upper_bound
 __height_lower_bound = 10
 __height_upper_bound = 300
 
-
 __num_components_embedded_max = 3
 
 
@@ -34,8 +33,9 @@ def filter_by_stroke_width_variance(cc_data: List[ConnectedComponentData]):
     for cc in cc_data:
         # Remove the point if the variance is above half the average stroke width. See paper for details
         # This parameter is found empirically. Sometimes removes text
+
         """
-        # This is how the paper sugests to do it, but it is non-sense
+        # This is how the paper suggests to do it, but it is non-sense
         if cc.get_variance_stroke_width() <= cc.get_mean_stroke_width() * __stroke_width_variance_coeff:
             filtered_set.append(cc)
         # """

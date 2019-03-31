@@ -10,6 +10,7 @@ __sw_median_max_ratio = 2
 __height_max_ratio = 2
 __max_distance_multiplier = 3
 __min_chain_size = 3
+
 __max_average_gray_diff = 5
 
 __gray_variance_coefficient = 1.25
@@ -186,7 +187,6 @@ def lengthen_chains(chains: List[Chain]):
         else:
             chains_copy[i] = lengthened_chain
 
-
     # Return unique elements
     return list(set(lengthened_chains))
 
@@ -222,7 +222,7 @@ def filter_by_chain_gray_variance(chains: List[Chain]):
     max_gray_variance = np.average(gray_variances)*__gray_variance_coefficient
     for i in range(len(chains)):
         if gray_variances[i] <= max_gray_variance:
-        #if gray_variances[i]/areas[i] < 1.5:
+        # if gray_variances[i]/areas[i] < 1.5:  # This might be a better filter?
             filtered_chains.append(chains[i])
 
     return filtered_chains
