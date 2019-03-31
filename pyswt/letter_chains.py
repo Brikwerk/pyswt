@@ -1,6 +1,7 @@
 import math
 import copy
 import cv2
+import numpy as np
 
 from .connected_component import ConnectedComponentData
 from typing import List
@@ -9,7 +10,10 @@ __sw_median_max_ratio = 2
 __height_max_ratio = 2
 __max_distance_multiplier = 3
 __min_chain_size = 3
-__max_average_gray_diff = 10
+
+__max_average_gray_diff = 5
+
+__gray_variance_coefficient = 1.25
 
 
 # Produce the final set of letter chains and get their bounding boxes
@@ -22,7 +26,8 @@ def run(cc_data_filtered: List[ConnectedComponentData]):
     chains = lengthen_chains(chains)
     chains = remove_short_chains(chains)
 
-    # return chains
+    # This is Daniel's idea, any it only works well for some images
+    # chains = filter_by_chain_gray_variance(chains)
 
     return chains
 
@@ -182,9 +187,45 @@ def lengthen_chains(chains: List[Chain]):
         else:
             chains_copy[i] = lengthened_chain
 
-
     # Return unique elements
     return list(set(lengthened_chains))
+
+
+# This is a function Daniel Herman thought would be good
+def filter_by_chain_gray_variance(chains: List[Chain]):
+    filtered_chains = []
+    gray_variances = []
+    areas = []
+    for i in range(len(chains)):
+        chain = chains[i]
+        count = 0
+        average_gray = 0
+        area = 0
+        for cc in chain.chain:
+            count += len(cc.grays)
+            area += cc.area
+            for g in cc.grays:
+                average_gray += g
+
+        average_gray = average_gray/count
+        variance_gray = 0
+
+        for cc in chain.chain:
+            for g in cc.grays:
+                variance_gray += (g - average_gray)**2
+
+        variance_gray = variance_gray/count
+        gray_variances.append(variance_gray)
+        areas.append(area)
+
+    print(np.sort(gray_variances))
+    max_gray_variance = np.average(gray_variances)*__gray_variance_coefficient
+    for i in range(len(chains)):
+        if gray_variances[i] <= max_gray_variance:
+        # if gray_variances[i]/areas[i] < 1.5:  # This might be a better filter?
+            filtered_chains.append(chains[i])
+
+    return filtered_chains
 
 
 def remove_short_chains(chains: List[Chain]):

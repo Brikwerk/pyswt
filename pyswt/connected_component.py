@@ -32,7 +32,6 @@ def run(gray_img, swt_median_image):
     
     swt_median_image -- An image with SWT applied to it
     """
-
     # Copying so we can remove pixels to keep track
     # of components found
     pixel_source = copy.deepcopy(swt_median_image)
@@ -52,7 +51,7 @@ def run(gray_img, swt_median_image):
             if pixel_source[row, col] > 0:
                 # Create a new data storage object
                 component_data = ConnectedComponentData(row, col, label)
-                region_grow(gray_img, pixel_source, component_image, label, row, col, component_data)
+                region_grow_stack(gray_img, pixel_source, component_image, label, row, col, component_data)
                 # Keep track of the component data
                 if component_data.area > 5:
                     connected_component_data.append(component_data)
@@ -61,9 +60,11 @@ def run(gray_img, swt_median_image):
     return component_image, connected_component_data
 
 
-def region_grow(gray_img, pixel_source, component_image, label, row, col, component_data, connect8=True, max_ratio=3):
+
+# This method is more gross than the recusive one, but does not break number of frames allowed
+def region_grow_stack(gray_img, pixel_source, component_image, label, row, col, component_data, connect8=True, max_ratio=3):
     """A stack based implementation of the region growing algorithm"""
-    
+
     if connect8:
         num_directions = 8
         directions = __directions8__
@@ -129,6 +130,7 @@ def region_grow(gray_img, pixel_source, component_image, label, row, col, compon
             except IndexError:
                 continue
 
+
 class ConnectedComponentData:
     """This class is utilized as a data container for the cc algorithm
     Do not call the get methods until all data points have been added
@@ -158,7 +160,8 @@ class ConnectedComponentData:
         # Statistical values to be calculated later
         self.__median_sw = None
         self.__mean_gray = None
-        self.__variance_gray = None
+
+        self.__variance_stroke_width = None
 
         self.__mean_gray = None
         self.__variance_gray = None
@@ -188,14 +191,15 @@ class ConnectedComponentData:
         return self.__median_sw
 
     def get_variance_stroke_width(self):
-        if self.__variance_gray is None:
+        if self.__variance_stroke_width is None:
             squared_sum = 0
             mean = self.get_mean_stroke_width()
             for s in self.stroke_widths:
                 squared_sum += (s - mean) ** 2
-            self.__variance_gray = squared_sum / len(self.stroke_widths)
 
-        return self.__variance_gray
+            self.__variance_stroke_width = squared_sum / len(self.stroke_widths)
+
+        return self.__variance_stroke_width
 
     def get_mean_gray(self):
         if self.__mean_gray is None:
