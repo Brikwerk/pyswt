@@ -70,6 +70,7 @@ class Chain:
             [self.row_max, self.col_min]  # Bottom-left
         ]
 
+
 # python does not allow multiple constructors....
 def build_chain(cc_1: ConnectedComponentData, cc_2: ConnectedComponentData):
     chain = Chain()
@@ -94,14 +95,14 @@ def build_chain_from_merge(row_min: int, row_max: int, col_min: int, col_max: in
 
 
 def merge_chains(c1: Chain, c2: Chain):
-    row_min = min(c1.row_min, c2.row_min)
-    row_max = max(c1.row_max, c2.row_max)
-    col_min = min(c1.col_min, c2.col_min)
-    col_max = max(c1.col_max, c2.col_max)
+    c1.row_min = min(c1.row_min, c2.row_min)
+    c1.row_max = max(c1.row_max, c2.row_max)
+    c1.col_min = min(c1.col_min, c2.col_min)
+    c1.col_max = max(c1.col_max, c2.col_max)
 
-    merged_chain = build_chain_from_merge(row_min, row_max, col_min, col_max, list(set().union(c1.chain, c2.chain)))
+    c1.chain = list(set().union(c1.chain, c2.chain))
 
-    return merged_chain
+    return c1
 
 
 def remove_if_heights_too_different(chains: List[Chain]):
@@ -142,9 +143,12 @@ def remove_if_grays_dissimilar(chains: List[Chain]):
 
 
 # return true if they share a connected component, false otherwise
-def contain_chain_link(chain_1: Chain, chain_2: Chain):
+def contain_new_chain_link(chain_1: Chain, chain_2: Chain):
     # if their bounding boxes do not over lap, then they cannot contain the same element. if too slow, implement
     # cycle through all cc elements to see if they contain the same cc
+    if chain_1 is chain_2:
+        return False
+
     for cc_1 in chain_1.chain:
         for cc_2 in chain_2.chain:
             if cc_1 is cc_2:
@@ -154,25 +158,33 @@ def contain_chain_link(chain_1: Chain, chain_2: Chain):
 
 # TODO: build a doubly linked list implementation to reduce time complexity to n^2
 def lengthen_chains(chains: List[Chain]):
+    chains_copy = list.copy(chains)
     lengthened_chains = []
     i = 0
-    while i < len(chains):
-        lengthened_chain = chains[i]
+    while i < len(chains_copy):
+        altered = False
+        lengthened_chain = chains_copy[i]
         j = i + 1
-        while j < len(chains):
-            if contain_chain_link(chains[i], chains[j]):
+        while j < len(chains_copy):
+
+            if contain_new_chain_link(chains_copy[i], chains_copy[j]):
+                altered = True
                 # Make a new larger chain that is he union of the 2
-                lengthened_chain = merge_chains(lengthened_chain, chains[j])
+                lengthened_chain = merge_chains(lengthened_chain, chains_copy[j])
 
-                # This is slow, causes this algorithm to be n^3
-                # No built in doubly linked list, which would solve this problem
-                del chains[j]
+                # This ensures we will catch all relations of near by components
+                chains_copy[j] = lengthened_chain
             j += 1
-        i += 1
 
-        lengthened_chains.append(lengthened_chain)
+        if not altered:
+            i += 1
+            lengthened_chains.append(lengthened_chain)
+        else:
+            chains_copy[i] = lengthened_chain
 
-    return lengthened_chains
+
+    # Return unique elements
+    return list(set(lengthened_chains))
 
 
 def remove_short_chains(chains: List[Chain]):
