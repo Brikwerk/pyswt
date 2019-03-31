@@ -18,19 +18,24 @@ def run(img):
 
     # Converting image to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # gray_smoothed = cv2.GaussianBlur(gray, (5,5), 0)
     # Applying SWT to image
     swt_img = swt(gray)
     # Get connected component image and data. connected_component_data is defined in connected_component.py
-    connected_components_img, connected_component_data = connected_component.run(swt_img)
+    connected_components_img, connected_component_data = connected_component.run(gray, swt_img)
     filtered_components = filter_connected_components.run(connected_component_data)
     # Chains contain the final bounding boxes
     chains = letter_chains.run(filtered_components)
+
+    """
     final_cc = []
     for chain in chains:
         for cc in chain.chain:
             final_cc.append(cc)
 
     return connected_component.get_connected_component_image(final_cc, swt_img.shape[0], swt_img.shape[1])
+    """
+    return letter_chains.make_image_with_bounding_boxes(img, chains)
 
 
 def swt(img):
@@ -57,7 +62,7 @@ def swt(img):
             if edge > 0:  # Checking if we're on an edge
                 # Passing in single derivative values for rows and cols
                 # Along with edges and ray origin
-                ray = cast_ray(gx, gy, edges, row, col, 1, math.pi / 2)
+                ray = cast_ray(gx, gy, edges, row, col, -1, math.pi / 2)
                 if ray != None:
                     # Adding ray to rays accumulator
                     rays.append(ray)
@@ -170,21 +175,6 @@ def median_ray(ray, swt_img):
         pixel_values.append(swt_img[coordinate[0], coordinate[1]])
     return np.median(pixel_values)
 
-
-def find_letters(swt_image):
-    return letter_comps
-
-
-def letter_filtering(letter_comps):
-    return letter_candidates
-
-
-def textline_aggregate(letter_candidates):
-    return textlines
-
-
-def word_detection(textlines):
-    return mask
 
 def print_image(img):
     for row in range(img.shape[0]):

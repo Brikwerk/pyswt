@@ -1,4 +1,6 @@
 import math
+import copy
+import cv2
 
 from .connected_component import ConnectedComponentData
 from typing import List
@@ -7,6 +9,7 @@ __sw_median_max_ratio = 2
 __height_max_ratio = 2
 __max_distance_multiplier = 3
 __min_chain_size = 3
+__max_average_gray_diff = 10
 
 
 # Produce the final set of letter chains and get their bounding boxes
@@ -14,6 +17,7 @@ def run(cc_data_filtered: List[ConnectedComponentData]):
     chains = populate_pairs(cc_data_filtered)
     # Get rid of chains if component height ratio > 2
     chains = remove_if_heights_too_different(chains)
+    chains = remove_if_grays_dissimilar(chains)
     chains = remove_if_stroke_widths_too_different(chains)
     chains = lengthen_chains(chains)
     chains = remove_short_chains(chains)
@@ -57,6 +61,14 @@ class Chain:
         self.col_min = -1
         self.col_max = -1
 
+    # Returns the coordinates for the bounding box: [top-left, top-right, bottom-right, bottom-left]
+    def get_bounding_box(self):
+        return [
+            [self.row_min, self.col_min],  # Top-left
+            [self.row_min, self.col_max],  # Top-right
+            [self.row_max, self.col_max],  # Bottom-right
+            [self.row_max, self.col_min]  # Bottom-left
+        ]
 
 # python does not allow multiple constructors....
 def build_chain(cc_1: ConnectedComponentData, cc_2: ConnectedComponentData):
@@ -118,6 +130,17 @@ def remove_if_stroke_widths_too_different(chains: List[Chain]):
     return filtered_chains
 
 
+def remove_if_grays_dissimilar(chains: List[Chain]):
+    filtered_chains = []
+    for chain in chains:
+        avg_gray_0 = chain.chain[0].get_mean_gray()
+        avg_gray_1 = chain.chain[1].get_mean_gray()
+        if abs(avg_gray_1 - avg_gray_0) < __max_average_gray_diff:
+            filtered_chains.append(chain)
+
+    return filtered_chains
+
+
 # return true if they share a connected component, false otherwise
 def contain_chain_link(chain_1: Chain, chain_2: Chain):
     # if their bounding boxes do not over lap, then they cannot contain the same element. if too slow, implement
@@ -160,3 +183,15 @@ def remove_short_chains(chains: List[Chain]):
 
     return long_chains
 
+
+# Default color is red
+def make_image_with_bounding_boxes(img, chains: List[Chain], color=(0, 0, 255)):
+    img_drawn = copy.deepcopy(img)
+    for chain in chains:
+        # Bounding-box top-left clockwise
+        bb = chain.get_bounding_box()
+        top_left = (bb[0][1], bb[0][0])
+        bottom_right = (bb[2][1], bb[2][0])
+        cv2.rectangle(img_drawn, top_left, bottom_right, color)
+
+    return img_drawn
