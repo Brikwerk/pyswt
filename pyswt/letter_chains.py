@@ -23,11 +23,12 @@ def run(cc_data_filtered: List[ConnectedComponentData]):
     chains = remove_if_heights_too_different(chains)
     chains = remove_if_grays_dissimilar(chains)
     chains = remove_if_stroke_widths_too_different(chains)
-    chains = lengthen_chains(chains)
-    chains = remove_short_chains(chains)
 
     # This is Daniel's idea, any it only works well for some images
     # chains = filter_by_chain_gray_variance(chains)
+
+    chains = lengthen_chains(chains)
+    chains = remove_short_chains(chains)
 
     return chains
 
@@ -217,12 +218,12 @@ def filter_by_chain_gray_variance(chains: List[Chain]):
         variance_gray = variance_gray/count
         gray_variances.append(variance_gray)
         areas.append(area)
+        print((variance_gray, area))
 
-    print(np.sort(gray_variances))
     max_gray_variance = np.average(gray_variances)*__gray_variance_coefficient
     for i in range(len(chains)):
-        if gray_variances[i] <= max_gray_variance:
-        # if gray_variances[i]/areas[i] < 1.5:  # This might be a better filter?
+        # if gray_variances[i] <= max_gray_variance:
+        if gray_variances[i]/areas[i] < 0.5:  # This might be a better filter?
             filtered_chains.append(chains[i])
 
     return filtered_chains

@@ -1,4 +1,5 @@
 import copy
+import cv2
 import numpy as np
 from typing import List
 
@@ -263,3 +264,16 @@ def get_connected_component_image(cc_data: List[ConnectedComponentData], num_row
             blank[coord[0], coord[1]] = 255
 
     return blank
+
+
+# Default color is red
+def make_image_with_bounding_boxes(img, ccs: List[ConnectedComponentData], color=(0, 0, 255)):
+    img_drawn = copy.deepcopy(img)
+    for cc in ccs:
+        # Bounding-box top-left clockwise
+        bb = cc.get_bounding_box()
+        top_left = (bb[0][1], bb[0][0])
+        bottom_right = (bb[2][1], bb[2][0])
+        cv2.rectangle(img_drawn, top_left, bottom_right, color)
+
+    return img_drawn

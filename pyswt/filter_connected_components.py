@@ -42,7 +42,7 @@ def filter_by_stroke_width_variance(cc_data: List[ConnectedComponentData]):
         # if cc.get_variance_stroke_width() <= __max_stroke_width_variance:
         if cc.get_variance_stroke_width()/cc.area < 0.05:
             filtered_set.append(cc)
-            print((cc.get_variance_stroke_width(), cc.area))
+            # print((cc.get_variance_stroke_width(), cc.area))
         # """
 
     return filtered_set
