@@ -23,7 +23,7 @@ __directions4__ = [
 ]
 
 
-def run(swt_median_image):
+def run(gray_img, swt_median_image):
     # Copying so we can remove pixels to keep track
     # of components found
     pixel_source = copy.deepcopy(swt_median_image)
@@ -43,55 +43,17 @@ def run(swt_median_image):
             if pixel_source[row, col] > 0:
                 # Create a new data storage object
                 component_data = ConnectedComponentData(row, col, label)
-                region_grow_stack(pixel_source, component_image, label, row, col, component_data)
+                region_grow_stack(gray_img, pixel_source, component_image, label, row, col, component_data)
                 # Keep track of the component data
-                connected_component_data.append(component_data)
+                if component_data.area > 5:
+                    connected_component_data.append(component_data)
                 label = label + 1
 
     return component_image, connected_component_data
 
 
-# We may consider removing component_image as we can store all this data in component_data
-# This method breaks from max frames limits, use the method below that uses a stack
-def region_grow(pixel_source, component_image, label, row, col, component_data, connect8=True, max_ratio=3):
-    # Getting current pixel value
-    curr_value = pixel_source[row, col]
-    # Removing point from the pixel source
-    pixel_source[row, col] = 0
-    # Adding our label to the components
-    component_image[row, col] = label
-    component_data.add_pixel(row, col, curr_value)
-
-    if connect8:
-        num_directions = 8
-        directions = __directions8__
-    else:
-        num_directions = 4
-        directions = __directions4__
-
-    # Looking at each direction
-    for i in range(0, num_directions):
-        try:
-            # Getting coords we're going to check to grow into
-            row_shift = row + directions[i][0]
-            col_shift = col + directions[i][1]
-
-            # Checking we're not growing into an empty region
-            if pixel_source[row_shift, col_shift] > 0:
-                adj_value = pixel_source[row_shift, col_shift]
-                # print("Current_value before: " + str(curr_value))
-                # print("adj_value before: " + str(adj_value))
-                if curr_value / adj_value < max_ratio and adj_value / curr_value < max_ratio:
-                    # print("Current_value: " + str(curr_value))
-                    # print("adj_value: " + str(adj_value))
-                    # Recursively grow to connected pieces
-                    region_grow(pixel_source, component_image, label, row_shift, col_shift, component_data, connect8)
-        except IndexError:
-            continue
-
-
 # This method is more gross than the recusive one, but does not break number of frames allowed
-def region_grow_stack(pixel_source, component_image, label, row, col, component_data, connect8=True, max_ratio=3):
+def region_grow_stack(gray_img, pixel_source, component_image, label, row, col, component_data, connect8=True, max_ratio=3):
     if connect8:
         num_directions = 8
         directions = __directions8__
@@ -102,14 +64,14 @@ def region_grow_stack(pixel_source, component_image, label, row, col, component_
     initial_stroke_width = pixel_source[row, col]
     # Delete visited pixel
     pixel_source[row, col] = 0
-    component_data.add_pixel(row, col, initial_stroke_width)
+    component_data.add_pixel(row, col, initial_stroke_width, gray_img[row, col])
     # label visited pixel
     component_image[row, col] = label
 
     pixel_stack = []
 
     # Initialize stack
-    for i in range(0, num_directions):
+    for i in range(num_directions):
         try:
             # Getting coords we're going to check to grow into
             row_shift = row + directions[i][0]
@@ -121,7 +83,7 @@ def region_grow_stack(pixel_source, component_image, label, row, col, component_
             if adj_value > 0:
                 if initial_stroke_width / adj_value < max_ratio and adj_value / initial_stroke_width < max_ratio:
                     # update connected component tracking data structures
-                    component_data.add_pixel(row_shift, col_shift, adj_value)
+                    component_data.add_pixel(row_shift, col_shift, adj_value, gray_img[row, col])
                     pixel_source[row_shift, col_shift] = 0
                     component_image[row_shift, col_shift] = label
                     # put on stack
@@ -134,7 +96,7 @@ def region_grow_stack(pixel_source, component_image, label, row, col, component_
     # Now go through to find the connected components
     while len(pixel_stack) > 0:
         curr_pixel = pixel_stack.pop()
-        for i in range(0, num_directions):
+        for i in range(num_directions):
             try:
                 # Getting coords we're going to check to grow into
                 row_shift = curr_pixel.row + directions[i][0]
@@ -147,7 +109,7 @@ def region_grow_stack(pixel_source, component_image, label, row, col, component_
                     # Checking stroke width ration does not exceed max ratio
                     if curr_pixel.stroke_width / adj_value < max_ratio and curr_pixel.stroke_width / initial_stroke_width < max_ratio:
                         # update connected component tracking data structures
-                        component_data.add_pixel(row_shift, col_shift, adj_value)
+                        component_data.add_pixel(row_shift, col_shift, adj_value, gray_img[row_shift, col_shift])
                         pixel_source[row_shift, col_shift] = 0
                         component_image[row_shift, col_shift] = label
                         # put on stack
@@ -181,10 +143,15 @@ class ConnectedComponentData:
         # A list of all stroke widths, will be used to calculate variance, and median stroke width
         self.stroke_widths = []
 
+        self.grays = []
+
         # Statistical values to be calculated later
         self.__median_sw = None
-        self.__mean_sw = None
-        self.__variance_sw = None
+        self.__mean_gray = None
+        self.__variance_gray = None
+
+        self.__mean_gray = None
+        self.__variance_gray = None
 
     def get_centroid(self):
         if self.__centroid is None:
@@ -199,10 +166,10 @@ class ConnectedComponentData:
         return self.__centroid
 
     def get_mean_stroke_width(self):
-        if self.__mean_sw is None:
-            self.__mean_sw = np.average(self.stroke_widths)
+        if self.__mean_gray is None:
+            self.__mean_gray = np.average(self.stroke_widths)
 
-        return self.__mean_sw
+        return self.__mean_gray
 
     def get_median_stroke_width(self):
         if self.__median_sw is None:
@@ -211,14 +178,30 @@ class ConnectedComponentData:
         return self.__median_sw
 
     def get_variance_stroke_width(self):
-        if self.__variance_sw is None:
+        if self.__variance_gray is None:
             squared_sum = 0
             mean = self.get_mean_stroke_width()
             for s in self.stroke_widths:
-                squared_sum += squared_sum + (s - mean) ** 2
-            self.__variance_sw = squared_sum / len(self.stroke_widths)
+                squared_sum += (s - mean) ** 2
+            self.__variance_gray = squared_sum / len(self.stroke_widths)
 
-        return self.__variance_sw
+        return self.__variance_gray
+
+    def get_mean_gray(self):
+        if self.__mean_gray is None:
+            self.__mean_gray = np.average(self.grays)
+
+        return self.__mean_gray
+
+    def get_variance_gray(self):
+        if self.__variance_gray is None:
+            squared_sum = 0
+            mean = self.get_mean_gray()
+            for g in self.grays:
+                squared_sum += (g - mean) ** 2
+            self.__variance_gray = squared_sum / len(self.grays)
+
+        return self.__variance_gray
 
     # Returns the coordinates for the bounding box: [top-left, top-right, bottom-right, bottom-left]
     def get_bounding_box(self):
@@ -230,10 +213,11 @@ class ConnectedComponentData:
         ]
 
     # updates the values this component contains
-    def add_pixel(self, row, col, stroke_width):
+    def add_pixel(self, row, col, stroke_width, gray_value):
         # add location and stroke width information
         self.pixel_coordinates.append([row, col])
         self.stroke_widths.append(stroke_width)
+        self.grays.append(gray_value)
 
         # update bounds
         if row < self.row_min:
