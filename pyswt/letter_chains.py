@@ -1,6 +1,7 @@
 import math
 import copy
 import cv2
+import numpy as np
 
 from .connected_component import ConnectedComponentData
 from typing import List
@@ -11,7 +12,7 @@ __max_distance_multiplier = 3
 __min_chain_size = 3
 __max_average_gray_diff = 10
 
-__gray_variance_coefficient = 1.75
+__gray_variance_coefficient = 1.25
 
 
 # Produce the final set of letter chains and get their bounding boxes
@@ -23,7 +24,9 @@ def run(cc_data_filtered: List[ConnectedComponentData]):
     chains = remove_if_stroke_widths_too_different(chains)
     chains = lengthen_chains(chains)
     chains = remove_short_chains(chains)
-    # chains = filter_by_chain_gray_variance(chains)
+
+    # This is Daniel's idea, any it only works well for some images
+    chains = filter_by_chain_gray_variance(chains)
 
     # return chains
 
@@ -213,9 +216,8 @@ def filter_by_chain_gray_variance(chains: List[Chain]):
         variance_gray = variance_gray/count
         gray_variances.append(variance_gray)
 
-        print(variance_gray)
-
-    max_gray_variance = min(gray_variances)*__gray_variance_coefficient
+    print(np.sort(gray_variances))
+    max_gray_variance = np.average(gray_variances)*__gray_variance_coefficient
     for i in range(len(chains)):
         if gray_variances[i] <= max_gray_variance:
             filtered_chains.append(chains[i])

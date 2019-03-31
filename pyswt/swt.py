@@ -19,13 +19,22 @@ def run(img):
     # Converting image to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     # gray_smoothed = cv2.GaussianBlur(gray, (5,5), 0)
-    # Applying SWT to image
-    swt_img = swt(gray)
+
+    # Applying SWT to image, once for light text, once for dark text
+    swt_light = swt(gray, 1)
+    swt_dark = swt(gray, -1)
+
     # Get connected component image and data. connected_component_data is defined in connected_component.py
-    connected_components_img, connected_component_data = connected_component.run(gray, swt_img)
-    filtered_components = filter_connected_components.run(connected_component_data)
-    # Chains contain the final bounding boxes
-    chains = letter_chains.run(filtered_components)
+    connected_components_img_light, connected_component_data_light = connected_component.run(gray, swt_light)
+    connected_components_img_dark, connected_component_data_dark = connected_component.run(gray, swt_dark)
+
+    # apply single connected component filters to remove noise
+    filtered_components_light = filter_connected_components.run(connected_component_data_light)
+    filtered_components_dark = filter_connected_components.run(connected_component_data_dark)
+
+    # Chains contain the final bounding boxes. Filter based on chain properties
+    chains_light = letter_chains.run(filtered_components_light)
+    chains_dark = letter_chains.run(filtered_components_dark)
 
     """
     final_cc = []
@@ -35,10 +44,13 @@ def run(img):
 
     return connected_component.get_connected_component_image(final_cc, swt_img.shape[0], swt_img.shape[1])
     """
-    return letter_chains.make_image_with_bounding_boxes(img, chains)
+    image_with_bounding_boxes = letter_chains.make_image_with_bounding_boxes(img, chains_light)
+    image_with_bounding_boxes = letter_chains.make_image_with_bounding_boxes(image_with_bounding_boxes, chains_dark, (255, 0, 0))
+
+    return image_with_bounding_boxes
 
 
-def swt(img):
+def swt(img, gradient_direction):
     """Applies the SWT to the input image"""
 
     # Getting Canny edges
@@ -55,18 +67,14 @@ def swt(img):
     swt_img[:] = np.Infinity  # Setting all values to infinite
 
     rays = []
-
-    edge_counter = 0
     # Looping through each pixel, calculating rays
     for row in range(img.shape[0]):
         for col in range(img.shape[1]):
             edge = edges[row, col]
-            edge_counter += 1
             if edge > 0:  # Checking if we're on an edge
-                print(edge_counter)
                 # Passing in single derivative values for rows and cols
                 # Along with edges and ray origin
-                ray = cast_ray(gx, gy, edges, row, col, -1, math.pi / 2)
+                ray = cast_ray(gx, gy, edges, row, col, gradient_direction, math.pi / 2)
                 if ray != None:
                     # Adding ray to rays accumulator
                     rays.append(ray)
