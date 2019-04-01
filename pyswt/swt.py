@@ -23,11 +23,13 @@ def run(img):
     swt_light = swt(gray, 1)
     swt_dark = swt(gray, -1)
 
-    # gray = cv2.GaussianBlur(gray, (5, 5), 0)
     # Get connected component image and data. connected_component_data is defined in connected_component.py
     connected_components_img_light, connected_component_data_light = connected_component.run(gray, swt_light)
     connected_components_img_dark, connected_component_data_dark = connected_component.run(gray, swt_dark)
 
+    # return connected_component.get_connected_component_image(connected_component_data_light, img.shape[0], img.shape[1])
+    # temp_img = connected_component.make_image_with_bounding_boxes(img, connected_component_data_dark)
+    # return connected_component.make_image_with_bounding_boxes(temp_img, connected_component_data_dark)
     # apply single connected component filters to remove noise
     filtered_components_light = filter_connected_components.run(connected_component_data_light)
     filtered_components_dark = filter_connected_components.run(connected_component_data_dark)
@@ -38,12 +40,13 @@ def run(img):
 
     """
     final_cc = []
-    for chain in chains:
+    for chain in dark:
         for cc in chain.chain:
             final_cc.append(cc)
 
     return connected_component.get_connected_component_image(final_cc, swt_img.shape[0], swt_img.shape[1])
     """
+
     image_with_bounding_boxes = letter_chains.make_image_with_bounding_boxes(img, chains_light)
     image_with_bounding_boxes = letter_chains.make_image_with_bounding_boxes(image_with_bounding_boxes, chains_dark, (255, 0, 0))
 

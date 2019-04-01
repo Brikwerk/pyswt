@@ -1,15 +1,19 @@
 from .connected_component import ConnectedComponentData
 from typing import List
 
-# Magic numbers as specified by the paper
-__stroke_width_variance_coeff = 0.5
-__max_stroke_width_variance = 5
-__aspect_ratio_upper_bound = 10
+# Magic number as specified by the paper
+__stroke_width_variance_coeff = 0.5  # I do not use this
+
+# Some magic numbers from the paper, others I found empirically
+__max_stroke_width_variance_to_area_ratio = 0.05
+__aspect_ratio_upper_bound = 5
 __aspect_ratio_lower_bound = 1.0 / __aspect_ratio_upper_bound
 __height_lower_bound = 10
 __height_upper_bound = 300
 
-__num_components_embedded_max = 3
+__max_width_to_height_ratio = 1.75
+
+__num_components_embedded_max = 4
 
 
 def run(connected_components_data: List[ConnectedComponentData]):
@@ -17,6 +21,7 @@ def run(connected_components_data: List[ConnectedComponentData]):
     filtered_data = connected_components_data
     filtered_data = filter_by_component_height(filtered_data)
     filtered_data = filter_by_aspect_ratio(filtered_data)
+    filtered_data = filter_by_relative_width(filtered_data)
 
     # if dropping text, it might be this method...
     filtered_data = filter_by_stroke_width_variance(filtered_data)
@@ -39,10 +44,9 @@ def filter_by_stroke_width_variance(cc_data: List[ConnectedComponentData]):
         if cc.get_variance_stroke_width() <= cc.get_mean_stroke_width() * __stroke_width_variance_coeff:
             filtered_set.append(cc)
         # """
-        # if cc.get_variance_stroke_width() <= __max_stroke_width_variance:
-        if cc.get_variance_stroke_width()/cc.area < 0.05:
+        if cc.get_variance_stroke_width()/cc.area < __max_stroke_width_variance_to_area_ratio:
             filtered_set.append(cc)
-            print((cc.get_variance_stroke_width(), cc.area))
+            # print((cc.get_variance_stroke_width(), cc.area))
         # """
 
     return filtered_set
@@ -70,6 +74,15 @@ def filter_by_component_height(cc_data: List[ConnectedComponentData]):
     for cc in cc_data:
         # Learned parameter, see paper
         if __height_lower_bound <= (cc.row_max - cc.row_min) <= __height_upper_bound:
+            filtered_set.append(cc)
+
+    return filtered_set
+
+
+def filter_by_relative_width(cc_data: List[ConnectedComponentData]):
+    filtered_set = []
+    for cc in cc_data:
+        if cc.get_width()/cc.get_height() <= __max_width_to_height_ratio:
             filtered_set.append(cc)
 
     return filtered_set

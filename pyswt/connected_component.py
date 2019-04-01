@@ -1,4 +1,5 @@
 import copy
+import cv2
 import numpy as np
 from typing import List
 
@@ -226,6 +227,12 @@ class ConnectedComponentData:
             [self.row_max, self.col_min]  # Bottom-left
         ]
 
+    def get_height(self):
+        return self.row_max - self.row_min
+
+    def get_width(self):
+        return self.col_max - self.col_min
+
     # updates the values this component contains
     def add_pixel(self, row, col, stroke_width, gray_value):
         # add location and stroke width information
@@ -263,3 +270,16 @@ def get_connected_component_image(cc_data: List[ConnectedComponentData], num_row
             blank[coord[0], coord[1]] = 255
 
     return blank
+
+
+# Default color is red
+def make_image_with_bounding_boxes(img, ccs: List[ConnectedComponentData], color=(0, 0, 255)):
+    img_drawn = copy.deepcopy(img)
+    for cc in ccs:
+        # Bounding-box top-left clockwise
+        bb = cc.get_bounding_box()
+        top_left = (bb[0][1], bb[0][0])
+        bottom_right = (bb[2][1], bb[2][0])
+        cv2.rectangle(img_drawn, top_left, bottom_right, color)
+
+    return img_drawn

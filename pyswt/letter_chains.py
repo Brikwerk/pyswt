@@ -7,27 +7,37 @@ from .connected_component import ConnectedComponentData
 from typing import List
 
 __sw_median_max_ratio = 2
-__height_max_ratio = 2
+__height_max_ratio = 1.5
+__max_chain_height = 150
 __max_distance_multiplier = 3
 __min_chain_size = 3
 
-__max_average_gray_diff = 5
-
+__max_average_gray_diff = 3
 __gray_variance_coefficient = 1.25
+
+
+__max_char_width_to_heigh_ratio = 1
 
 
 # Produce the final set of letter chains and get their bounding boxes
 def run(cc_data_filtered: List[ConnectedComponentData]):
     chains = populate_pairs(cc_data_filtered)
     # Get rid of chains if component height ratio > 2
+    chains = remove_if_pair_area_too_different(chains)
     chains = remove_if_heights_too_different(chains)
     chains = remove_if_grays_dissimilar(chains)
     chains = remove_if_stroke_widths_too_different(chains)
-    chains = lengthen_chains(chains)
-    chains = remove_short_chains(chains)
 
     # This is Daniel's idea, any it only works well for some images
     # chains = filter_by_chain_gray_variance(chains)
+    if len(chains) > 0:
+        __max_chain_height = max([chain.get_height() for chain in chains])
+
+    chains = lengthen_chains(chains)
+    chains = remove_short_chains(chains)
+    chains = filter_chains_by_height(chains)
+    chains = filter_height_to_width_ratio(chains)
+    # chains = filter_by_expected_width_given_height_and_num_components(chains)
 
     return chains
 
@@ -74,6 +84,12 @@ class Chain:
             [self.row_max, self.col_max],  # Bottom-right
             [self.row_max, self.col_min]  # Bottom-left
         ]
+
+    def get_height(self):
+        return self.row_max - self.row_min
+
+    def get_width(self):
+        return self.col_max - self.col_min
 
 
 # python does not allow multiple constructors....
@@ -131,6 +147,26 @@ def remove_if_stroke_widths_too_different(chains: List[Chain]):
         sw_median_1 = chain.chain[1].get_median_stroke_width()
         # see paper for reason for this magic number
         if sw_median_0 / sw_median_1 <= __sw_median_max_ratio or sw_median_1 / sw_median_0 <= __sw_median_max_ratio:
+            filtered_chains.append(chain)
+
+    return filtered_chains
+
+
+def filter_height_to_width_ratio(chains: List[Chain]):
+    filtered_chains = []
+    for chain in chains:
+        if chain.get_height()/chain.get_width() <= 0.66:
+            filtered_chains.append(chain)
+
+    return filtered_chains
+
+
+def remove_if_pair_area_too_different(chains: List[Chain]):
+    filtered_chains = []
+    for chain in chains:
+        cc_1 = chain.chain[0]
+        cc_2 = chain.chain[1]
+        if cc_1.area / cc_2.area <= 5 or cc_2.area / cc_1.area <= 5:
             filtered_chains.append(chain)
 
     return filtered_chains
@@ -217,13 +253,22 @@ def filter_by_chain_gray_variance(chains: List[Chain]):
         variance_gray = variance_gray/count
         gray_variances.append(variance_gray)
         areas.append(area)
+        print((variance_gray, area))
 
-    print(np.sort(gray_variances))
     max_gray_variance = np.average(gray_variances)*__gray_variance_coefficient
     for i in range(len(chains)):
-        if gray_variances[i] <= max_gray_variance:
-        # if gray_variances[i]/areas[i] < 1.5:  # This might be a better filter?
+        # if gray_variances[i] <= max_gray_variance:
+        if gray_variances[i]/areas[i] < 0.5:  # This might be a better filter?
             filtered_chains.append(chains[i])
+
+    return filtered_chains
+
+
+def filter_chains_by_height(chains: List[Chain]):
+    filtered_chains = []
+    for chain in chains:
+        if chain.row_max - chain.row_min <= __max_chain_height:
+            filtered_chains.append(chain)
 
     return filtered_chains
 
@@ -237,6 +282,17 @@ def remove_short_chains(chains: List[Chain]):
     return long_chains
 
 
+def filter_by_expected_width_given_height_and_num_components(chains: List[Chain]):
+    filtered_chains = []
+    for chain in chains:
+        num_cc = len(chain.chain)
+        expected_width_upperbound = num_cc * __max_char_width_to_heigh_ratio*chain.get_height()
+        if chain.get_width() <= expected_width_upperbound:
+            filtered_chains.append(chain)
+
+    return filtered_chains
+
+
 # Default color is red
 def make_image_with_bounding_boxes(img, chains: List[Chain], color=(0, 0, 255)):
     img_drawn = copy.deepcopy(img)
@@ -245,6 +301,6 @@ def make_image_with_bounding_boxes(img, chains: List[Chain], color=(0, 0, 255)):
         bb = chain.get_bounding_box()
         top_left = (bb[0][1], bb[0][0])
         bottom_right = (bb[2][1], bb[2][0])
-        cv2.rectangle(img_drawn, top_left, bottom_right, color)
+        cv2.rectangle(img_drawn, top_left, bottom_right, color, 2)
 
     return img_drawn
