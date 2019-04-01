@@ -227,6 +227,12 @@ class ConnectedComponentData:
             [self.row_max, self.col_min]  # Bottom-left
         ]
 
+    def get_height(self):
+        return self.row_max - self.row_min
+
+    def get_width(self):
+        return self.col_max - self.col_min
+
     # updates the values this component contains
     def add_pixel(self, row, col, stroke_width, gray_value):
         # add location and stroke width information

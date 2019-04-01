@@ -23,29 +23,31 @@ def run(img):
     swt_light = swt(gray, 1)
     swt_dark = swt(gray, -1)
 
-    remove_noise = np.ones((2, 2), np.uint8)
-    remove_noise[1][0] = 0
-    link_back = np.ones((3, 3), np.uint8)
-    swt_dark = cv2.erode(swt_dark, remove_noise, iterations=1)
-    swt_dark = cv2.dilate(swt_dark, link_back, iterations=1)
-    swt_light = cv2.erode(swt_light, remove_noise, iterations=1)
-    swt_light = cv2.dilate(swt_light, link_back, iterations=1)
-    # swt_dark = cv2.cvtColor(swt_dark, cv2.COLOR_BGR2GRAY)
+    morphology = False
+    if morphology:
+        remove_noise = np.ones((3, 3), np.uint8)
+        #remove_noise[1][0] = 0
+        link_back = np.ones((3, 3), np.uint8)
+        swt_dark = cv2.erode(swt_dark, remove_noise, iterations=1)
+        swt_dark = cv2.dilate(swt_dark, link_back, iterations=1)
+        swt_light = cv2.erode(swt_light, remove_noise, iterations=1)
+        swt_light = cv2.dilate(swt_light, link_back, iterations=1)
+        # swt_dark = cv2.cvtColor(swt_dark, cv2.COLOR_BGR2GRAY)
+
     # Get connected component image and data. connected_component_data is defined in connected_component.py
     connected_components_img_light, connected_component_data_light = connected_component.run(gray, swt_light)
     connected_components_img_dark, connected_component_data_dark = connected_component.run(gray, swt_dark)
 
-    for cc in connected_component_data_dark:
-        cc.row_max -= 1
-        cc.col_max -= 1
+    if morphology:
+        for cc in connected_component_data_dark:
+            cc.row_max -= 1
+            cc.col_max -= 1
 
-    for cc in connected_component_data_light:
-        cc.row_max -= 1
-        cc.col_max -= 1
+        for cc in connected_component_data_light:
+            cc.row_max -= 1
+            cc.col_max -= 1
 
-
-
-    # return connected_component.get_connected_component_image(connected_component_data_dark, img.shape[0], img.shape[1])
+    # return connected_component.get_connected_component_image(connected_component_data_light, img.shape[0], img.shape[1])
     # temp_img = connected_component.make_image_with_bounding_boxes(img, connected_component_data_dark)
     # return connected_component.make_image_with_bounding_boxes(temp_img, connected_component_data_dark)
     # apply single connected component filters to remove noise
@@ -65,6 +67,10 @@ def run(img):
 
     return connected_component.get_connected_component_image(final_cc, swt_img.shape[0], swt_img.shape[1])
     """
+    for chain in chains_light:
+        print(len(chain.chain))
+
+
     image_with_bounding_boxes = letter_chains.make_image_with_bounding_boxes(img, chains_light)
     image_with_bounding_boxes = letter_chains.make_image_with_bounding_boxes(image_with_bounding_boxes, chains_dark, (255, 0, 0))
 
