@@ -2,8 +2,20 @@ import pyswt
 import cv2
 import sys
 
-img_path = "./images/swt-example-4.png"
+ext = ".png"
+img_name = "swt-example-1"
+img_path = "./images/" + img_name + ext
+img_output_path = "./output/"
 # img_path = "./images/jpg-4.jpg"
 img = cv2.imread(img_path)
-swt_img = pyswt.run(img)
-cv2.imwrite("output.png", swt_img)
+final_img, swt_ld, cc_ld, cc_boxes, filtered_cc = pyswt.run(img)
+
+
+cv2.imwrite(img_output_path + img_name + "-final" + ext, final_img)
+cv2.imwrite(img_output_path + img_name + "-swt-light" + ext, swt_ld[0])
+cv2.imwrite(img_output_path + img_name + "-swt-dark" + ext, swt_ld[1])
+cv2.imwrite(img_output_path + img_name + "-cc-bw-light" + ext, cc_ld[0])
+cv2.imwrite(img_output_path + img_name + "-cc-bw-dark" + ext, cc_ld[1])
+cv2.imwrite(img_output_path + img_name + "-cc-BB" + ext, cc_boxes)
+cv2.imwrite(img_output_path + img_name + "-cc-filtered" + ext, filtered_cc)
+

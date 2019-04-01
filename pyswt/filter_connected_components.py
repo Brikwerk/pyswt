@@ -19,6 +19,7 @@ __num_components_embedded_max = 4
 def run(connected_components_data: List[ConnectedComponentData]):
     # Filter from cheapest to calculate to most expensive
     filtered_data = connected_components_data
+    filtered_data = filter_by_bounding_box_area(filtered_data)
     filtered_data = filter_by_component_height(filtered_data)
     filtered_data = filter_by_aspect_ratio(filtered_data)
     filtered_data = filter_by_relative_width(filtered_data)
@@ -83,6 +84,15 @@ def filter_by_relative_width(cc_data: List[ConnectedComponentData]):
     filtered_set = []
     for cc in cc_data:
         if cc.get_width()/cc.get_height() <= __max_width_to_height_ratio:
+            filtered_set.append(cc)
+
+    return filtered_set
+
+
+def filter_by_bounding_box_area(cc_data: List[ConnectedComponentData]):
+    filtered_set = []
+    for cc in cc_data:
+        if cc.get_width() * cc.get_height() >= 100:
             filtered_set.append(cc)
 
     return filtered_set
