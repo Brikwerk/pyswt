@@ -11,7 +11,7 @@ __aspect_ratio_lower_bound = 1.0 / __aspect_ratio_upper_bound
 __height_lower_bound = 10
 __height_upper_bound = 300
 
-__max_width_to_height_ratio = 1.75
+__max_width_to_height_ratio = 2.00
 
 __num_components_embedded_max = 4
 
