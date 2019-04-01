@@ -13,8 +13,10 @@ __max_distance_multiplier = 3
 __min_chain_size = 3
 
 __max_average_gray_diff = 3
-
 __gray_variance_coefficient = 1.25
+
+
+__max_char_width_to_heigh_ratio = 1
 
 
 # Produce the final set of letter chains and get their bounding boxes
@@ -34,7 +36,8 @@ def run(cc_data_filtered: List[ConnectedComponentData]):
     chains = lengthen_chains(chains)
     chains = remove_short_chains(chains)
     chains = filter_chains_by_height(chains)
-    chains = remove_if_height_greater_than_width(chains)
+    chains = filter_height_to_width_ratio(chains)
+    # chains = filter_by_expected_width_given_height_and_num_components(chains)
 
     return chains
 
@@ -149,10 +152,10 @@ def remove_if_stroke_widths_too_different(chains: List[Chain]):
     return filtered_chains
 
 
-def remove_if_height_greater_than_width(chains: List[Chain]):
+def filter_height_to_width_ratio(chains: List[Chain]):
     filtered_chains = []
     for chain in chains:
-        if chain.get_height()/chain.get_width() <= 1:
+        if chain.get_height()/chain.get_width() <= 0.66:
             filtered_chains.append(chain)
 
     return filtered_chains
@@ -269,6 +272,7 @@ def filter_chains_by_height(chains: List[Chain]):
 
     return filtered_chains
 
+
 def remove_short_chains(chains: List[Chain]):
     long_chains = []
     for chain in chains:
@@ -276,6 +280,17 @@ def remove_short_chains(chains: List[Chain]):
             long_chains.append(chain)
 
     return long_chains
+
+
+def filter_by_expected_width_given_height_and_num_components(chains: List[Chain]):
+    filtered_chains = []
+    for chain in chains:
+        num_cc = len(chain.chain)
+        expected_width_upperbound = num_cc * __max_char_width_to_heigh_ratio*chain.get_height()
+        if chain.get_width() <= expected_width_upperbound:
+            filtered_chains.append(chain)
+
+    return filtered_chains
 
 
 # Default color is red
@@ -286,6 +301,6 @@ def make_image_with_bounding_boxes(img, chains: List[Chain], color=(0, 0, 255)):
         bb = chain.get_bounding_box()
         top_left = (bb[0][1], bb[0][0])
         bottom_right = (bb[2][1], bb[2][0])
-        cv2.rectangle(img_drawn, top_left, bottom_right, color)
+        cv2.rectangle(img_drawn, top_left, bottom_right, color, 2)
 
     return img_drawn

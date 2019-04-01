@@ -5,7 +5,7 @@ from typing import List
 __stroke_width_variance_coeff = 0.5  # I do not use this
 
 # Some magic numbers from the paper, others I found empirically
-__max_stroke_width_variance_to_area_ratio = 0.1
+__max_stroke_width_variance_to_area_ratio = 0.05
 __aspect_ratio_upper_bound = 5
 __aspect_ratio_lower_bound = 1.0 / __aspect_ratio_upper_bound
 __height_lower_bound = 10

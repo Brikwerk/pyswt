@@ -70,7 +70,6 @@ def run(img):
     for chain in chains_light:
         print(len(chain.chain))
 
-
     image_with_bounding_boxes = letter_chains.make_image_with_bounding_boxes(img, chains_light)
     image_with_bounding_boxes = letter_chains.make_image_with_bounding_boxes(image_with_bounding_boxes, chains_dark, (255, 0, 0))
 
