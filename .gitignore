@@ -113,3 +113,4 @@ venv.bak/
 
 # Output
 output.png
+./output/**
