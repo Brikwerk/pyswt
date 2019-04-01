@@ -8,18 +8,21 @@ __stroke_width_variance_coeff = 0.5  # I do not use this
 __max_stroke_width_variance_to_area_ratio = 0.05
 __aspect_ratio_upper_bound = 5
 __aspect_ratio_lower_bound = 1.0 / __aspect_ratio_upper_bound
-__height_lower_bound = 10
+__height_lower_bound = 5
 __height_upper_bound = 300
+
+__min_bounding_box_area_divisor = 5500
 
 __max_width_to_height_ratio = 1.75
 
 __num_components_embedded_max = 4
 
 
-def run(connected_components_data: List[ConnectedComponentData]):
+def run(connected_components_data: List[ConnectedComponentData], num_img_rows, num_img_cols):
+
     # Filter from cheapest to calculate to most expensive
     filtered_data = connected_components_data
-    filtered_data = filter_by_bounding_box_area(filtered_data)
+    filtered_data = filter_by_bounding_box_area(filtered_data, num_img_rows, num_img_cols)
     filtered_data = filter_by_component_height(filtered_data)
     filtered_data = filter_by_aspect_ratio(filtered_data)
     filtered_data = filter_by_relative_width(filtered_data)
@@ -89,10 +92,11 @@ def filter_by_relative_width(cc_data: List[ConnectedComponentData]):
     return filtered_set
 
 
-def filter_by_bounding_box_area(cc_data: List[ConnectedComponentData]):
+def filter_by_bounding_box_area(cc_data: List[ConnectedComponentData], num_rows, num_cols):
+    min_bounding_box_area = num_rows*num_cols/__min_bounding_box_area_divisor
     filtered_set = []
     for cc in cc_data:
-        if cc.get_width() * cc.get_height() >= 100:
+        if cc.get_width() * cc.get_height() >= min_bounding_box_area:
             filtered_set.append(cc)
 
     return filtered_set

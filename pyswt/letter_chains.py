@@ -15,7 +15,9 @@ __min_chain_size = 3
 __max_average_gray_diff = 3
 __gray_variance_coefficient = 1.25
 
+__min_area_proportion_of_bounding_box = 5
 
+__max_area_ratio = 2
 __max_char_width_to_heigh_ratio = 1
 
 
@@ -28,15 +30,13 @@ def run(cc_data_filtered: List[ConnectedComponentData]):
     chains = remove_if_grays_dissimilar(chains)
     chains = remove_if_stroke_widths_too_different(chains)
 
-    # This is Daniel's idea, any it only works well for some images
-    # chains = filter_by_chain_gray_variance(chains)
-    if len(chains) > 0:
-        __max_chain_height = max([chain.get_height() for chain in chains])
-
     chains = lengthen_chains(chains)
     chains = remove_short_chains(chains)
     chains = filter_chains_by_height(chains)
     chains = filter_height_to_width_ratio(chains)
+    chains = filter_area_by_bounding_box_area(chains)
+    # chains = filter_area_by_members_area(chains)
+    chains = filter_bb_area_by_members_bb_area(chains)
     # chains = filter_by_expected_width_given_height_and_num_components(chains)
 
     return chains
@@ -166,7 +166,7 @@ def remove_if_pair_area_too_different(chains: List[Chain]):
     for chain in chains:
         cc_1 = chain.chain[0]
         cc_2 = chain.chain[1]
-        if cc_1.area / cc_2.area <= 5 or cc_2.area / cc_1.area <= 5:
+        if cc_1.area / cc_2.area <= __max_area_ratio and cc_2.area / cc_1.area <= __max_area_ratio:
             filtered_chains.append(chain)
 
     return filtered_chains
@@ -265,6 +265,9 @@ def filter_by_chain_gray_variance(chains: List[Chain]):
 
 
 def filter_chains_by_height(chains: List[Chain]):
+    # chains = filter_by_chain_gray_variance(chains)
+    if len(chains) > 0:
+        __max_chain_height = max([chain.get_height() for chain in chains])*1.5
     filtered_chains = []
     for chain in chains:
         if chain.row_max - chain.row_min <= __max_chain_height:
@@ -289,6 +292,52 @@ def filter_by_expected_width_given_height_and_num_components(chains: List[Chain]
         expected_width_upperbound = num_cc * __max_char_width_to_heigh_ratio*chain.get_height()
         if chain.get_width() <= expected_width_upperbound:
             filtered_chains.append(chain)
+
+    return filtered_chains
+
+
+def filter_area_by_bounding_box_area(chains: List[Chain]):
+    filtered_chains = []
+    for chain in chains:
+        area = 0
+        for cc in chain.chain:
+            area += cc.area
+        if area >= chain.get_height()*chain.get_width()/__min_area_proportion_of_bounding_box:
+            filtered_chains.append(chain)
+
+    return filtered_chains
+
+
+def filter_bb_area_by_members_bb_area(chains: List[Chain]):
+    filtered_chains = []
+    for chain in chains:
+        ccs = chain.chain
+        for i in range(len(ccs)):
+            area_mismatch = False
+            area_i = ccs[i].get_height() * ccs[i].get_width()
+            for j in range(i+1, len(ccs)):
+                area_j = ccs[j].get_height() * ccs[j].get_width()
+                if area_i / area_j > __max_area_ratio or area_j / area_i > __max_area_ratio:
+                    area_mismatch = True
+                    break
+            if not area_mismatch:
+                filtered_chains.append(chain)
+
+    return filtered_chains
+
+
+def filter_area_by_members_area(chains: List[Chain]):
+    filtered_chains = []
+    for chain in chains:
+        ccs = chain.chain
+        for i in range(len(ccs)):
+            area_mismatch = False
+            for j in range(i+1, len(ccs)):
+                if ccs[i].area / ccs[j].area > __max_area_ratio or ccs[j].area / ccs[i].area > __max_area_ratio:
+                    area_mismatch = True
+                    break
+            if not area_mismatch:
+                filtered_chains.append(chain)
 
     return filtered_chains
 

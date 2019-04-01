@@ -24,6 +24,9 @@ def run(img):
     swt_dark = swt(gray, -1)
     swt_light_dark = [swt_light, swt_dark]
 
+    num_rows = img.shape[0]
+    num_cols = img.shape[1]
+
     # Get connected component image and data. connected_component_data is defined in connected_component.py
     connected_components_img_light, connected_component_data_light = connected_component.run(gray, swt_light)
     connected_components_img_dark, connected_component_data_dark = connected_component.run(gray, swt_dark)
@@ -41,8 +44,8 @@ def run(img):
     cc_drawn_boxes = connected_component.make_image_with_bounding_boxes(img, aggregate_cc_light)
     cc_drawn_boxes = connected_component.make_image_with_bounding_boxes(cc_drawn_boxes, aggregate_cc_dark, (255, 0, 0))
     # apply single connected component filters to remove noise
-    filtered_components_light = filter_connected_components.run(connected_component_data_light)
-    filtered_components_dark = filter_connected_components.run(connected_component_data_dark)
+    filtered_components_light = filter_connected_components.run(connected_component_data_light, num_rows, num_cols)
+    filtered_components_dark = filter_connected_components.run(connected_component_data_dark, num_rows, num_cols)
 
     aggregate_cc_dark = []
     for cc in filtered_components_dark:
@@ -53,7 +56,8 @@ def run(img):
         aggregate_cc_light.append(cc)
 
     cc_filt_drawn_boxes = connected_component.make_image_with_bounding_boxes(img, aggregate_cc_light)
-    cc_filt_drawn_boxes = connected_component.make_image_with_bounding_boxes(cc_filt_drawn_boxes, aggregate_cc_dark, (255, 0, 0))
+    cc_filt_drawn_boxes = connected_component.make_image_with_bounding_boxes(cc_filt_drawn_boxes, aggregate_cc_dark,
+                                                                             (255, 0, 0))
 
     # Chains contain the final bounding boxes. Filter based on chain properties
     chains_light = letter_chains.run(filtered_components_light)
@@ -70,7 +74,8 @@ def run(img):
     """
 
     image_with_bounding_boxes = letter_chains.make_image_with_bounding_boxes(img, chains_light)
-    image_with_bounding_boxes = letter_chains.make_image_with_bounding_boxes(image_with_bounding_boxes, chains_dark, (255, 0, 0))
+    image_with_bounding_boxes = letter_chains.make_image_with_bounding_boxes(image_with_bounding_boxes, chains_dark,
+                                                                             (255, 0, 0))
 
     return image_with_bounding_boxes, swt_light_dark, cc_light_dark, cc_drawn_boxes, cc_filt_drawn_boxes
 
@@ -78,8 +83,17 @@ def run(img):
 def swt(img, gradient_direction):
     """Applies the SWT to the input image"""
 
+    # Get hysterisis threshold values by otsu after smoothing
+    blurred_img = cv2.GaussianBlur(img, (5, 5), 0)
+    relative_value, no_clue = cv2.threshold(blurred_img, 0, 255, cv2.THRESH_BINARY + cv2.THRESH_OTSU)
+    threshold = math.ceil(relative_value)*1.3
+    print(threshold)
     # Getting Canny edges
-    edges = cv2.Canny(img, 100, 300)
+    edges = cv2.Canny(img, threshold, 1.5*threshold)
+
+
+    # edges = cv2.Canny(img, 100, 300)
+
     # Getting gradient derivatives
     # Note: can also use a Scharr filter here if
     # ksize is set to -1. Potentially, provides better
@@ -112,9 +126,9 @@ def swt(img, gradient_direction):
 
     # Set values of infinity to zero so that only values that had ray > 0
     for row in range(swt_img.shape[0]):
-      for col in range(swt_img.shape[1]):
-         if swt_img[row, col] == np.Infinity:
-           swt_img[row, col] = 0
+        for col in range(swt_img.shape[1]):
+            if swt_img[row, col] == np.Infinity:
+                swt_img[row, col] = 0
 
     # Creating a copy of the SWT image
     swt_median = copy.deepcopy(swt_img)
@@ -154,10 +168,14 @@ def cast_ray(gx, gy, edges, row, col, dir, max_angle_diff):
     # Getting origin gradients
     g_row = gx[row, col] * dir
     g_col = gy[row, col] * dir
+
+    # These values can be zero in rare cases despite being associated with an edge
+    if g_row == 0 and g_col == 0:
+        return None
+
     # Normalizing g_col and g_row to ensure we move ahead one pixel
     g_col_norm = g_col / magnitude(g_col, g_row)
     g_row_norm = g_row / magnitude(g_col, g_row)
-
     # TODO: Cap ray size based off of ratio?
     while True:
         # Calculating the next step ahead in the ray

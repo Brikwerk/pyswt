@@ -1,10 +1,15 @@
 import pyswt
 import cv2
-import sys
 import os
 
-ext = ".png"
-img_name = "swt-example-2"
+is_png = True
+if is_png:
+    ext = ".png"
+    img_name = "swt-example-3"
+else:
+    ext = ".jpg"
+    img_name = "jpg-3"
+
 img_path = "./images/" + img_name + ext
 img_output_path = "./output/"
 
