@@ -154,6 +154,11 @@ def cast_ray(gx, gy, edges, row, col, dir, max_angle_diff):
     # Getting origin gradients
     g_row = gx[row, col] * dir
     g_col = gy[row, col] * dir
+
+    # If we encounter an edge with no direction
+    if g_row == 0 and g_col == 0:
+        return None;
+
     # Normalizing g_col and g_row to ensure we move ahead one pixel
     g_col_norm = g_col / magnitude(g_col, g_row)
     g_row_norm = g_row / magnitude(g_col, g_row)
