@@ -304,3 +304,12 @@ def make_image_with_bounding_boxes(img, chains: List[Chain], color=(0, 0, 255)):
         cv2.rectangle(img_drawn, top_left, bottom_right, color, 2)
 
     return img_drawn
+
+def get_bounding_boxes(chains: List[Chain]):
+    bboxes = []
+    # Looping through chains and outputting bounding boxes
+    for chain in chains:
+        bbox = chain.get_bounding_box()
+        bboxes.append(bbox)
+
+    return bboxes
