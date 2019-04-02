@@ -16,7 +16,7 @@ while(cap.isOpened()):
         frame_resize = cv2.resize(frame, (math.floor(frame.shape[1]/scale), math.floor(frame.shape[0]/scale)), interpolation = cv2.INTER_LINEAR)
 
         # Applying SWT to the frame
-        final_img, swt_ld, cc_ld, cc_boxes, filtered_cc = pyswt.run(frame_resize)
+        final_img, swt_ld, cc_ld, cc_boxes, filtered_cc = pyswt.run(frame_resize, diagnostic=True)
 
         # Scaling swt image size back up
         output = cv2.resize(final_img, (math.floor(final_img.shape[1]*scale), math.floor(final_img.shape[0]*scale)), interpolation = cv2.INTER_LINEAR)
