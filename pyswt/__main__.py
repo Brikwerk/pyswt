@@ -22,67 +22,49 @@ def run(img, image_output=False, diagnostic=False, timing=False):
     # Converting image to grayscale
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    # Running in diagnostic mode
-    # Enables diagnostic outputs from each step of the algorithm
+    # Running Stroke Width Transform with timing
+    start = timeit.default_timer()
     if diagnostic:
-        # Running Stroke Width Transform with timing
-        start = timeit.default_timer()
         swt_light, swt_dark, swt_light_dark = run_swt(gray, diagnostic=True)
-        end = timeit.default_timer()
-        swt_dur = end - start
+    else:
+        swt_light, swt_dark = run_swt(gray)
+    end = timeit.default_timer()
+    swt_dur = end - start
 
-        # Getting Connected Components with timing
-        start = timeit.default_timer()
+    # Getting Connected Components with timing
+    start = timeit.default_timer()
+    if diagnostic:
         cc_drawn_boxes, cc_light_dark, cc_data_light, cc_data_dark = run_connected_components(gray, img, swt_light, swt_dark, diagnostic=True)
-        end = timeit.default_timer()
-        cc_dur = end - start
+    else:
+        cc_data_light, cc_data_dark = run_connected_components(gray, img, swt_light, swt_dark)
+    end = timeit.default_timer()
+    cc_dur = end - start
 
-        # Filtering Connected components with timing
-        start = timeit.default_timer()
+    # Filtering Connected components with timing
+    start = timeit.default_timer()
+    if diagnostic:
         filt_comps_light, filt_comps_dark, cc_filt_drawn_boxes = run_filtered_connected_components(cc_data_light, cc_data_dark, img, diagnostic=True)
-        end = timeit.default_timer()
-        cc_filt_dur = end - start
+    else:
+        filt_comps_light, filt_comps_dark = run_filtered_connected_components(cc_data_light, cc_data_dark, img)
+    end = timeit.default_timer()
+    cc_filt_dur = end - start
 
-        # Getting letter chains with timing
-        start = timeit.default_timer()
+    # Getting letter chains with timing
+    start = timeit.default_timer()
+    if diagnostic:
         image_with_bounding_boxes = run_letter_chains(img, filt_comps_light, filt_comps_dark, diagnostic=True)
-        end = timeit.default_timer()
-        lc_dur = end - start
+    else:
+        bounding_boxes = run_letter_chains(img, filt_comps_light, filt_comps_dark, image=image_output)
+    end = timeit.default_timer()
+    lc_dur = end - start
 
-        # Printing out durations
-        if timing:
-            print_durs(swt_dur, cc_dur, cc_filt_dur, lc_dur)
+    # Printing out durations
+    if timing:
+        print_durs(swt_dur, cc_dur, cc_filt_dur, lc_dur)
 
+    if diagnostic:
         return image_with_bounding_boxes, swt_light_dark, cc_light_dark, cc_drawn_boxes, cc_filt_drawn_boxes
     else:
-        # Running Stroke Width Transform with timing
-        start = timeit.default_timer()
-        swt_light, swt_dark = run_swt(gray)
-        end = timeit.default_timer()
-        swt_dur = end - start
-
-        # Getting Connected Components with timing
-        start = timeit.default_timer()
-        cc_data_light, cc_data_dark = run_connected_components(gray, img, swt_light, swt_dark)
-        end = timeit.default_timer()
-        cc_dur = end - start
-
-        # Filtering Connected components with timing
-        start = timeit.default_timer()
-        filt_comps_light, filt_comps_dark = run_filtered_connected_components(cc_data_light, cc_data_dark, img)
-        end = timeit.default_timer()
-        cc_filt_dur = end - start
-
-        # Getting letter chains with timing
-        start = timeit.default_timer()
-        bounding_boxes = run_letter_chains(img, filt_comps_light, filt_comps_dark, image=image_output)
-        end = timeit.default_timer()
-        lc_dur = end - start
-
-        # Printing out durations
-        if timing:
-            print_durs(swt_dur, cc_dur, cc_filt_dur, lc_dur)
-
         return bounding_boxes
 
 def run_swt(gray, diagnostic=False):
