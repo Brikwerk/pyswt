@@ -7,4 +7,5 @@ img_path = "./images/swt-example-1.png"
 img = cv2.imread(img_path)
 """
 
-print(timeit.timeit("pyswt.run(img)",setup,number=1))
+num_tests = 3
+print(timeit.timeit("pyswt.run(img)",setup,number=num_tests)/num_tests)
