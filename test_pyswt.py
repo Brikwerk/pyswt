@@ -4,7 +4,7 @@ import sys
 import os
 
 ext = ".png"
-img_name = "swt-example-2"
+img_name = "swt-example-1"
 img_path = "./images/" + img_name + ext
 img_output_path = "./output/"
 
