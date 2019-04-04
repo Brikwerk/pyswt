@@ -40,10 +40,7 @@ def run(img, gradient_direction):
                             swt_img[point[0], point[1]] = width
 
     # Set values of infinity to zero so that only values that had ray > 0
-    for row in range(swt_img.shape[0]):
-      for col in range(swt_img.shape[1]):
-         if swt_img[row, col] == np.Infinity:
-           swt_img[row, col] = 0
+    swt_img[swt_img == np.Infinity] = 0
 
     # Creating a copy of the SWT image
     swt_median = copy.deepcopy(swt_img)
